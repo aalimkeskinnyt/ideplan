@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Users, Search, X } from 'lucide-react';
+import { Plus, Edit, Trash2, Users, Search, X, UserCheck, Award, BookOpen } from 'lucide-react';
 import { Teacher, EDUCATION_LEVELS, Subject } from '../types';
 import { useFirestore } from '../hooks/useFirestore';
 import { useToast } from '../hooks/useToast';
@@ -58,7 +58,7 @@ const Teachers = () => {
 
   const sortedTeachers = getFilteredTeachers().sort((a, b) => a.name.localeCompare(b.name, 'tr'));
 
-  // NEW: Delete all teachers function
+  // Delete all teachers function
   const handleDeleteAllTeachers = () => {
     if (teachers.length === 0) {
       warning('⚠️ Silinecek Öğretmen Yok', 'Sistemde silinecek öğretmen bulunamadı');
@@ -73,16 +73,10 @@ const Teachers = () => {
         try {
           let deletedCount = 0;
           
-          console.log('🗑️ Tüm öğretmenler siliniyor:', {
-            totalTeachers: teachers.length
-          });
-
-          // Delete each teacher
           for (const teacher of teachers) {
             try {
               await remove(teacher.id);
               deletedCount++;
-              console.log(`✅ Öğretmen silindi: ${teacher.name}`);
             } catch (err) {
               console.error(`❌ Öğretmen silinemedi: ${teacher.name}`, err);
             }
@@ -90,8 +84,6 @@ const Teachers = () => {
 
           if (deletedCount > 0) {
             success('🗑️ Öğretmenler Silindi', `${deletedCount} öğretmen başarıyla silindi`);
-            
-            // Reset filters and search
             setLevelFilter('');
             setBranchFilter('');
             setSearchQuery('');
@@ -189,11 +181,9 @@ const Teachers = () => {
     setSearchQuery('');
   };
 
-  // ENTER tuşu desteği
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      console.log('🔍 Enter ile öğretmen araması:', searchQuery);
       const target = e.target as HTMLInputElement;
       target.blur();
     }
@@ -227,284 +217,301 @@ const Teachers = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="mobile-loading">
-          <div className="mobile-loading-spinner"></div>
-          <div className="mobile-loading-text">Yükleniyor...</div>
-        </div>
+      <div className="loading-professional">
+        <div className="loading-spinner-professional"></div>
+        <div className="loading-text-professional">Öğretmenler yükleniyor...</div>
       </div>
     );
   }
 
   return (
-    <div className="container-mobile">
-      {/* CRITICAL: Mobile-optimized header */}
-      <div className="header-mobile">
-        <div className="flex items-center">
-          <Users className="w-8 h-8 text-blue-600 mr-3" />
-          <div>
-            <h1 className="text-responsive-xl font-bold text-gray-900">Öğretmenler</h1>
-            <p className="text-responsive-sm text-gray-600">{teachers.length} öğretmen kayıtlı ({sortedTeachers.length} gösteriliyor)</p>
+    <div className="space-professional">
+      {/* Professional Header */}
+      <div className="professional-header p-6 rounded-xl mb-8">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between space-y-4 lg:space-y-0">
+          <div className="flex items-center">
+            <div className="bg-blue-100 p-3 rounded-xl mr-4">
+              <Users className="w-8 h-8 text-blue-600" />
+            </div>
+            <div>
+              <h1 className="text-professional-heading">Öğretmen Yönetimi</h1>
+              <p className="text-professional-subtitle">
+                {teachers.length} öğretmen kayıtlı • {sortedTeachers.length} gösteriliyor
+              </p>
+            </div>
           </div>
-        </div>
-        <div className="button-group-mobile">
-          {/* NEW: Delete All Button */}
-          {teachers.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+            {teachers.length > 0 && (
+              <Button
+                onClick={handleDeleteAllTeachers}
+                icon={Trash2}
+                variant="danger"
+                disabled={isDeletingAll}
+                className="w-full sm:w-auto"
+              >
+                {isDeletingAll ? 'Siliniyor...' : `Tümünü Sil (${teachers.length})`}
+              </Button>
+            )}
+            
             <Button
-              onClick={handleDeleteAllTeachers}
-              icon={Trash2}
-              variant="danger"
-              disabled={isDeletingAll}
+              onClick={() => setIsBulkModalOpen(true)}
+              icon={Plus}
+              variant="secondary"
               className="w-full sm:w-auto"
             >
-              {isDeletingAll ? 'Siliniyor...' : `Tümünü Sil (${teachers.length})`}
+              Toplu Ekle
             </Button>
-          )}
-          
-          <Button
-            onClick={() => setIsBulkModalOpen(true)}
-            icon={Plus}
-            variant="secondary"
-            className="w-full sm:w-auto"
-          >
-            Toplu Ekle
-          </Button>
-          <Button
-            onClick={() => setIsModalOpen(true)}
-            icon={Plus}
-            variant="primary"
-            className="w-full sm:w-auto"
-          >
-            Yeni Öğretmen
-          </Button>
+            <Button
+              onClick={() => setIsModalOpen(true)}
+              icon={Plus}
+              variant="ide-primary"
+              className="w-full sm:w-auto"
+            >
+              Yeni Öğretmen
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* CRITICAL: Mobile-optimized search and filters */}
-      <div className="mobile-card mobile-spacing mb-6">
-        {/* Search */}
-        <div className="mobile-form-group">
-          <label className="mobile-form-label">
-            🔍 Öğretmen Ara
-          </label>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={handleSearchKeyDown}
-              placeholder="Öğretmen adı veya branş ara... (Enter ile ara)"
-              className="mobile-form-input pl-10 pr-10"
-              title="Enter ile ara, ESC ile temizle"
-            />
+      {/* Search and Filters */}
+      <div className="professional-card mb-8">
+        <div className="professional-card-content">
+          {/* Search */}
+          <div className="professional-form-group">
+            <label className="professional-label">
+              <Search className="w-4 h-4 inline mr-2" />
+              Öğretmen Ara
+            </label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                placeholder="Öğretmen adı veya branş ara..."
+                className="professional-input pl-10 pr-10"
+              />
+              {searchQuery && (
+                <button
+                  onClick={clearSearch}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors p-1 rounded"
+                  title="Aramayı temizle"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              )}
+            </div>
             {searchQuery && (
-              <button
-                onClick={clearSearch}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors btn-touch"
-                title="Aramayı temizle"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="mt-2 flex items-center justify-between">
+                <p className="text-sm text-blue-600">
+                  <Search className="w-4 h-4 inline mr-1" />
+                  "{searchQuery}" için {sortedTeachers.length} sonuç bulundu
+                </p>
+                <button
+                  onClick={clearSearch}
+                  className="text-xs text-gray-500 hover:text-gray-700 underline"
+                >
+                  Temizle
+                </button>
+              </div>
             )}
           </div>
-          {searchQuery && (
-            <div className="mt-2 flex items-center justify-between">
-              <p className="text-sm text-blue-600">
-                🔍 "{searchQuery}" için {sortedTeachers.length} sonuç bulundu
-              </p>
-              <button
-                onClick={clearSearch}
-                className="text-xs text-gray-500 hover:text-gray-700 underline"
-              >
-                Temizle
-              </button>
-            </div>
-          )}
-        </div>
 
-        {/* Filters */}
-        <div className="responsive-grid-2 gap-responsive">
-          <Select
-            label="Seviye Filtresi"
-            value={levelFilter}
-            onChange={setLevelFilter}
-            options={levelFilterOptions}
-          />
-          <Select
-            label="Branş Filtresi"
-            value={branchFilter}
-            onChange={setBranchFilter}
-            options={branchFilterOptions}
-          />
+          {/* Filters */}
+          <div className="grid-professional-2">
+            <Select
+              label="Seviye Filtresi"
+              value={levelFilter}
+              onChange={setLevelFilter}
+              options={levelFilterOptions}
+            />
+            <Select
+              label="Branş Filtresi"
+              value={branchFilter}
+              onChange={setBranchFilter}
+              options={branchFilterOptions}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Statistics Cards */}
+      <div className="grid-professional-4 mb-8">
+        <div className="stats-card-professional">
+          <div className="flex items-center justify-center mb-4">
+            <div className="bg-blue-100 p-3 rounded-xl">
+              <Users className="w-8 h-8 text-blue-600" />
+            </div>
+          </div>
+          <div className="stats-number-professional">{teachers.length}</div>
+          <div className="stats-label-professional">Toplam Öğretmen</div>
+        </div>
+        
+        <div className="stats-card-professional">
+          <div className="flex items-center justify-center mb-4">
+            <div className="bg-emerald-100 p-3 rounded-xl">
+              <BookOpen className="w-8 h-8 text-emerald-600" />
+            </div>
+          </div>
+          <div className="stats-number-professional">{getUniqueBranches().length}</div>
+          <div className="stats-label-professional">Farklı Branş</div>
+        </div>
+        
+        <div className="stats-card-professional">
+          <div className="flex items-center justify-center mb-4">
+            <div className="bg-purple-100 p-3 rounded-xl">
+              <Award className="w-8 h-8 text-purple-600" />
+            </div>
+          </div>
+          <div className="stats-number-professional">{EDUCATION_LEVELS.length}</div>
+          <div className="stats-label-professional">Eğitim Seviyesi</div>
+        </div>
+        
+        <div className="stats-card-professional">
+          <div className="flex items-center justify-center mb-4">
+            <div className="bg-orange-100 p-3 rounded-xl">
+              <UserCheck className="w-8 h-8 text-orange-600" />
+            </div>
+          </div>
+          <div className="stats-number-professional">{sortedTeachers.length}</div>
+          <div className="stats-label-professional">Filtrelenen</div>
         </div>
       </div>
 
       {sortedTeachers.length === 0 ? (
-        <div className="text-center py-12 mobile-card">
-          <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            {teachers.length === 0 ? 'Henüz öğretmen eklenmemiş' : 
-             searchQuery ? 'Arama sonucu bulunamadı' : 'Filtrelere uygun öğretmen bulunamadı'}
-          </h3>
-          <p className="text-gray-500 mb-4">
-            {teachers.length === 0 ? 'İlk öğretmeninizi ekleyerek başlayın' : 
-             searchQuery ? `"${searchQuery}" araması için sonuç bulunamadı` : 'Farklı filtre kriterleri deneyin'}
-          </p>
-          <div className="button-group-mobile">
-            {teachers.length === 0 && (
-              <>
-                <Button
-                  onClick={() => setIsBulkModalOpen(true)}
-                  icon={Plus}
-                  variant="secondary"
-                >
-                  Toplu Ekle
-                </Button>
-                <Button
-                  onClick={() => setIsModalOpen(true)}
-                  icon={Plus}
-                  variant="primary"
-                >
-                  Öğretmen Ekle
-                </Button>
-              </>
-            )}
-            {(searchQuery || levelFilter || branchFilter) && (
-              <div className="button-group-mobile">
-                {searchQuery && (
-                  <Button onClick={clearSearch} variant="secondary">
-                    Aramayı Temizle
-                  </Button>
-                )}
-                {(levelFilter || branchFilter) && (
-                  <Button 
-                    onClick={() => {
-                      setLevelFilter('');
-                      setBranchFilter('');
-                    }} 
+        <div className="professional-card">
+          <div className="empty-state-professional">
+            <Users className="empty-state-icon-professional" />
+            <h3 className="empty-state-title-professional">
+              {teachers.length === 0 ? 'Henüz öğretmen eklenmemiş' : 
+               searchQuery ? 'Arama sonucu bulunamadı' : 'Filtrelere uygun öğretmen bulunamadı'}
+            </h3>
+            <p className="empty-state-description-professional">
+              {teachers.length === 0 ? 'İlk öğretmeninizi ekleyerek başlayın' : 
+               searchQuery ? `"${searchQuery}" araması için sonuç bulunamadı` : 'Farklı filtre kriterleri deneyin'}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              {teachers.length === 0 && (
+                <>
+                  <Button
+                    onClick={() => setIsBulkModalOpen(true)}
+                    icon={Plus}
                     variant="secondary"
                   >
-                    Filtreleri Temizle
+                    Toplu Ekle
                   </Button>
-                )}
-              </div>
-            )}
+                  <Button
+                    onClick={() => setIsModalOpen(true)}
+                    icon={Plus}
+                    variant="ide-primary"
+                  >
+                    Öğretmen Ekle
+                  </Button>
+                </>
+              )}
+              {(searchQuery || levelFilter || branchFilter) && (
+                <div className="flex flex-col sm:flex-row gap-3">
+                  {searchQuery && (
+                    <Button onClick={clearSearch} variant="secondary">
+                      Aramayı Temizle
+                    </Button>
+                  )}
+                  {(levelFilter || branchFilter) && (
+                    <Button 
+                      onClick={() => {
+                        setLevelFilter('');
+                        setBranchFilter('');
+                      }} 
+                      variant="secondary"
+                    >
+                      Filtreleri Temizle
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       ) : (
-        <>
-          {/* CRITICAL: Mobile table cards for small screens */}
-          <div className="mobile-table-cards">
-            {sortedTeachers.map((teacher) => (
-              <div key={teacher.id} className="mobile-table-card">
-                <div className="mobile-table-card-header">
-                  {teacher.name}
-                </div>
-                <div className="mobile-table-card-row">
-                  <span className="mobile-table-card-label">Branş</span>
-                  <span className="mobile-table-card-value">{teacher.branch}</span>
-                </div>
-                <div className="mobile-table-card-row">
-                  <span className="mobile-table-card-label">Seviye</span>
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    teacher.level === 'Anaokulu' ? 'bg-green-100 text-green-800' :
-                    teacher.level === 'İlkokul' ? 'bg-blue-100 text-blue-800' :
-                    'bg-purple-100 text-purple-800'
-                  }`}>
-                    {teacher.level}
-                  </span>
-                </div>
-                <div className="mobile-table-card-row">
-                  <span className="mobile-table-card-label">İşlemler</span>
-                  <div className="flex space-x-2">
-                    <Button
-                      onClick={() => handleEdit(teacher)}
-                      icon={Edit}
-                      size="sm"
-                      variant="secondary"
-                    >
-                      Düzenle
-                    </Button>
-                    <Button
-                      onClick={() => handleDelete(teacher.id)}
-                      icon={Trash2}
-                      size="sm"
-                      variant="danger"
-                    >
-                      Sil
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* CRITICAL: Desktop table */}
-          <div className="desktop-table mobile-card overflow-hidden">
-            <div className="table-responsive">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+        <div className="professional-card">
+          <div className="overflow-x-auto">
+            <table className="professional-table">
+              <thead className="professional-table-header">
+                <tr>
+                  <th className="professional-table-cell text-left">
+                    <div className="flex items-center">
+                      <Users className="w-4 h-4 mr-2" />
                       Ad Soyad
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    </div>
+                  </th>
+                  <th className="professional-table-cell text-left">
+                    <div className="flex items-center">
+                      <BookOpen className="w-4 h-4 mr-2" />
                       Branş
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    </div>
+                  </th>
+                  <th className="professional-table-cell text-left">
+                    <div className="flex items-center">
+                      <Award className="w-4 h-4 mr-2" />
                       Seviye
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      İşlemler
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {sortedTeachers.map((teacher) => (
-                    <tr key={teacher.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{teacher.name}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">{teacher.branch}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          teacher.level === 'Anaokulu' ? 'bg-green-100 text-green-800' :
-                          teacher.level === 'İlkokul' ? 'bg-blue-100 text-blue-800' :
-                          'bg-purple-100 text-purple-800'
-                        }`}>
-                          {teacher.level}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex justify-end space-x-2">
-                          <Button
-                            onClick={() => handleEdit(teacher)}
-                            icon={Edit}
-                            size="sm"
-                            variant="secondary"
-                          >
-                            Düzenle
-                          </Button>
-                          <Button
-                            onClick={() => handleDelete(teacher.id)}
-                            icon={Trash2}
-                            size="sm"
-                            variant="danger"
-                          >
-                            Sil
-                          </Button>
+                    </div>
+                  </th>
+                  <th className="professional-table-cell text-right">İşlemler</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {sortedTeachers.map((teacher) => (
+                  <tr key={teacher.id} className="professional-table-row">
+                    <td className="professional-table-cell">
+                      <div className="flex items-center">
+                        <div className="bg-blue-100 w-10 h-10 rounded-lg flex items-center justify-center mr-3">
+                          <Users className="w-5 h-5 text-blue-600" />
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        <div>
+                          <div className="font-semibold text-gray-900">{teacher.name}</div>
+                          <div className="text-sm text-gray-500">Öğretmen</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="professional-table-cell">
+                      <div className="badge-info">{teacher.branch}</div>
+                    </td>
+                    <td className="professional-table-cell">
+                      <span className={`badge-professional ${
+                        teacher.level === 'Anaokulu' ? 'bg-green-100 text-green-800' :
+                        teacher.level === 'İlkokul' ? 'bg-blue-100 text-blue-800' :
+                        'bg-purple-100 text-purple-800'
+                      }`}>
+                        {teacher.level}
+                      </span>
+                    </td>
+                    <td className="professional-table-cell text-right">
+                      <div className="flex justify-end space-x-2">
+                        <Button
+                          onClick={() => handleEdit(teacher)}
+                          icon={Edit}
+                          size="sm"
+                          variant="secondary"
+                        >
+                          Düzenle
+                        </Button>
+                        <Button
+                          onClick={() => handleDelete(teacher.id)}
+                          icon={Trash2}
+                          size="sm"
+                          variant="danger"
+                        >
+                          Sil
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </>
+        </div>
       )}
 
       {/* Single Teacher Modal */}
@@ -513,7 +520,7 @@ const Teachers = () => {
         onClose={resetForm}
         title={editingTeacher ? 'Öğretmen Düzenle' : 'Yeni Öğretmen Ekle'}
       >
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="space-professional">
           <Input
             label="Ad Soyad"
             value={formData.name}
@@ -538,7 +545,7 @@ const Teachers = () => {
             required
           />
 
-          <div className="button-group-mobile mt-6">
+          <div className="flex justify-end space-x-3 pt-4">
             <Button
               type="button"
               onClick={resetForm}
@@ -548,7 +555,7 @@ const Teachers = () => {
             </Button>
             <Button
               type="submit"
-              variant="primary"
+              variant="ide-primary"
             >
               {editingTeacher ? 'Güncelle' : 'Kaydet'}
             </Button>
@@ -561,13 +568,14 @@ const Teachers = () => {
         isOpen={isBulkModalOpen}
         onClose={() => setIsBulkModalOpen(false)}
         title="Toplu Öğretmen Ekleme"
+        size="lg"
       >
-        <form onSubmit={handleBulkSubmit}>
-          <div className="mb-4">
-            <div className="flex items-center justify-between mb-3">
-              <label className="block text-sm font-medium text-gray-700">
+        <form onSubmit={handleBulkSubmit} className="space-professional">
+          <div className="professional-form-group">
+            <div className="flex items-center justify-between mb-4">
+              <label className="professional-label">
                 Öğretmen Listesi
-                <span className="text-red-500">*</span>
+                <span className="text-red-500 ml-1">*</span>
               </label>
               <Button
                 type="button"
@@ -581,19 +589,19 @@ const Teachers = () => {
             
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {bulkTeachers.map((teacher, index) => (
-                <div key={index} className="grid grid-cols-4 gap-2 p-3 bg-gray-50 rounded-lg">
+                <div key={index} className="grid grid-cols-4 gap-3 p-4 bg-gray-50 rounded-lg">
                   <input
                     type="text"
                     placeholder="Ad Soyad"
                     value={teacher.name}
                     onChange={(e) => updateBulkRow(index, 'name', e.target.value)}
-                    className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="professional-input"
                     required
                   />
                   <select
                     value={teacher.branch}
                     onChange={(e) => updateBulkRow(index, 'branch', e.target.value)}
-                    className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="professional-select"
                     required
                   >
                     <option value="">Branş Seçin</option>
@@ -604,7 +612,7 @@ const Teachers = () => {
                   <select
                     value={teacher.level}
                     onChange={(e) => updateBulkRow(index, 'level', e.target.value)}
-                    className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="professional-select"
                     required
                   >
                     <option value="">Seviye</option>
@@ -615,7 +623,7 @@ const Teachers = () => {
                   <button
                     type="button"
                     onClick={() => removeBulkRow(index)}
-                    className="px-2 py-1 bg-red-100 text-red-600 rounded text-sm hover:bg-red-200 disabled:opacity-50"
+                    className="btn-professional-danger text-sm"
                     disabled={bulkTeachers.length === 1}
                   >
                     Sil
@@ -625,16 +633,16 @@ const Teachers = () => {
             </div>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-            <h4 className="text-sm font-medium text-blue-800 mb-2">Örnek Öğretmenler:</h4>
-            <div className="text-xs text-blue-700 space-y-1">
+          <div className="notification-info">
+            <h4 className="font-medium text-blue-800 mb-2">Örnek Öğretmenler:</h4>
+            <div className="text-sm text-blue-700 space-y-1">
               <p>• Ahmet Yılmaz - Matematik - İlkokul</p>
               <p>• Ayşe Demir - Türkçe - Ortaokul</p>
               <p>• Mehmet Kaya - Fen Bilimleri - İlkokul</p>
             </div>
           </div>
 
-          <div className="button-group-mobile">
+          <div className="flex justify-end space-x-3 pt-4">
             <Button
               type="button"
               onClick={() => setIsBulkModalOpen(false)}
@@ -644,7 +652,7 @@ const Teachers = () => {
             </Button>
             <Button
               type="submit"
-              variant="primary"
+              variant="ide-primary"
             >
               Toplu Ekle ({bulkTeachers.filter(t => t.name && t.branch && t.level).length} öğretmen)
             </Button>
